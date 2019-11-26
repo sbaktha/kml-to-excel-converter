@@ -1,5 +1,5 @@
 """
-    This file converts the coordinates from a KML file obtained from Google Earth to an excel file 
+    This file converts the coordinates from a KML file obtained from Google Earth to an excel file
     Coordinates are saved in the format of DDMMSS.SS
 
     Copyright (C) 2019 Bakthakolahalan Shyamsundar
@@ -23,7 +23,9 @@ Instructions:
 -------------
 * This program depends on pandas and Beautiful soup libraries. Make sure to install them.
 
-* Change the filename and filepath to the name of the KML file (without the extension) and its directory 
+* Change the filename and filepath to the name of the KML file (without the extension) and its directory
+
+* Change the type inorder to get appropriate suffix in the filenames
 
 """
 
@@ -33,20 +35,45 @@ import pandas as pd
 def main():
     filename = ''
     filepath = ''
-    suffix = '.kml'
+
+    """
+    Select type as follows:
+        't' for Takeoff Zone
+        'r' for Recovery Zone
+        'g' for Geofence
+    """
+    type = 'r'
+
+    if type == 'g':
+        suffix = '_Airspace.kml'
+        xlsuffix = '_geofence_coordinates.xlsx'
+        print('Converting geofence coordinates to Excel......')
+    elif type == 't':
+        suffix = '_Takeoff_Zone.kml'
+        xlsuffix = '_takeoff_zone_coordinates.xlsx'
+        print('Converting takeoff zone coordinates to Excel......')
+    elif type == 'r':
+        suffix = '_Recovery_Zone.kml'
+        xlsuffix ='_recovery_zone_coordinates.xlsx'
+        print('Converting recovery zone coordinates to Excel......')
+    else:
+        print('Invalid type')
+
     with open(filepath+filename+suffix, 'r') as f:
         s = BeautifulSoup(f, 'xml')
         for coords in s.find_all('coordinates'):
             latlongalt = coords.string.strip().split(" ")
             df = pd.DataFrame(columns=['Latitude','Longitude']);
-            writer = pd.ExcelWriter(filename+'_coordinates.xlsx')
+            print('File location and name:' + filepath + filename + xlsuffix)
+            writer = pd.ExcelWriter(filepath + filename + xlsuffix)
+
             i = 0
             for split in latlongalt[0:]:
                 temp = []
                 latlongtemp = split.split(',')
 
                 lat = float(latlongtemp[1])
-                longi = float(latlongtemp[0])
+                long = float(latlongtemp[0])
 
                 lat_out_deg = int(lat)
                 lat_out_min = int((lat - lat_out_deg) * 60)
@@ -57,8 +84,8 @@ def main():
                     lat_out_sec = '0' + str(lat_out_sec)
                 temp.append(str(lat_out_deg) + str(lat_out_min) + str(lat_out_sec)[0:5])
 
-                long_out_deg = int(longi)
-                long_out_min = int((longi - long_out_deg) * 60)
+                long_out_deg = int(long)
+                long_out_min = int((long - long_out_deg) * 60)
                 if(long_out_min < 10):
                     long_out_min = '0' + str(long_out_min)
                 long_out_sec = (- int(long_out_min) + (long - int(long))*60)* 60
@@ -71,6 +98,8 @@ def main():
 
             df.to_excel(writer,'Sheet1',index=False)
             writer.save()
+
+            print('KML to Excel conversion successful. xlsx file created. ')
 
 
 if __name__ == "__main__":
